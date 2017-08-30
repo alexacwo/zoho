@@ -1,0 +1,219 @@
+@extends('layouts.app')
+
+@section('content')
+    <div class="container">
+        <div class="col-sm-12">
+					
+            <div class="panel panel-success">
+                <div class="panel-heading">
+					Invoices
+                </div>
+
+                <div class="panel-body">				
+				
+					<div class="col-md-12">			
+					
+						<form action="{{ url('/invoice') }}" method="POST" class="form-horizontal" enctype="multipart/form-data">
+							{{ csrf_field() }}
+							
+							@if (session('response_message'))
+								<div class="col-md-12" style="padding-top:0px; padding-left:0px; margin-bottom:20px;">					
+									<div class="alert alert-warning" style="margin-bottom:0px;">
+										<strong>{{ session('response_message') }}</strong>
+									</div>
+								</div>	
+							@endif
+							
+							<div class="form-group">
+								<div class="col-sm-4">
+									<div class="fileupload fileupload-new" data-provides="fileupload">
+										<span class="btn btn-primary btn-file" style="float:left;">
+											<span class="fileupload-new">
+												Select file
+											</span>
+											<span class="fileupload-exists">
+												Change
+											</span>
+											<input name="excel_invoice" type="file" />
+										</span>
+										<span class="fileupload-preview" style="float:left; margin-right:10px;">
+										</span>
+										<a href="#" class="close fileupload-exists" data-dismiss="fileupload" style="float:left;">
+											?
+										</a>
+										<div style="clear:both;"></div>
+									</div>
+								</div>
+							
+							</div>
+							
+							<div class="form-group">
+								<div class="col-sm-2">
+									<button type="submit" class="btn btn-default">
+										<i class="fa fa-plus"></i> Upload invoice
+									</button>
+								</div>
+							</div>
+						</form>
+						
+					</div>
+				</div>
+			</div> 
+			
+			@if (isset($devices) && count($devices) > 0)
+				<div class="panel panel-success">
+					<div class="panel-heading">
+						Edit devices
+					</div>
+
+					<div class="panel-body" ng-init="devices = {{$devices}}"> 
+					
+						<div class="animate-show" ng-show="deviceUploadingError">
+							<div class="col-md-6" style="padding-top:0px;">					
+								<div class="alert alert-danger">
+									<strong>Some error occured! Try to refresh the page.</strong>
+								</div>
+							</div>		
+						</div>
+						<div class="animate-show" ng-show="deviceUploadingSuccess">
+							<div class="col-md-6" style="padding-top:0px;">					
+								<div class="alert alert-success">
+									<strong>Device was updated in the database successfully.</strong>
+								</div>
+							</div>		
+						</div>
+						
+						<div class="col-sm-12">
+							<ul uib-pagination
+										total-items="devices.length"
+										items-per-page="devicesNumPerPage"
+										ng-model="devicesCurrentPage"
+										max-size="devicesMaxSize"
+										class="pagination-sm"
+										boundary-links="true"></ul>
+						</div>		
+				
+						<div class="col-md-12" style="padding:0px;">	
+						
+							<table class="table table-striped task-table">
+
+								<!-- Table Headings -->
+								<thead>
+									<th>Sales Rep</th>
+									<th>Make</th>
+									<th>Model</th>
+									<th>Serial</th>
+									<th>Base</th>
+									<th>Tax</th>
+									<th>Mono cost</th>
+									<th>Color cost</th>
+									<th>Mono/color cost</th>
+									<th>Color2 cost</th>
+									<th>Color3 cost</th>
+									<th>&nbsp;</th>
+									<th>&nbsp;</th>
+								</thead>
+								<tbody>  
+									@foreach ($devices as $device)
+										<tr class="devices_upload_row animate-show" ng-hide="hideDeletedDevice[{{ $loop->index }}]">
+											<td class="table-text col-sm-2">	
+												<select class="form-control"
+													ng-model="devices[{{ $loop->index }}].sales_rep"
+													ng-init="devices[{{ $loop->index }}].sales_rep='{{ $device['sales_rep'] }}'">
+													<option value="jesse">
+														Jesse
+													</option>
+													<option value="laine">
+														Laine
+													</option>
+													<option value="greg">
+														Greg
+													</option>
+												</select>
+											</td>
+											<td class="table-text col-sm-1">									
+												<input type="text" class="form-control"
+													ng-model="devices[{{ $loop->index }}].make"
+													ng-init="devices[{{ $loop->index }}].make='{{ $device['make'] }}'">
+											</td>
+											<td class="table-text col-sm-2">									
+												<input type="text" class="form-control"
+													ng-model="devices[{{ $loop->index }}].model"
+													ng-init="devices[{{ $loop->index }}].model='{{ $device['model'] }}'">
+											</td>
+											<td class="table-text col-sm-2">										
+												<input disabled type="text" class="form-control"
+													ng-model="devices[{{ $loop->index }}].serial"
+													ng-init="devices[{{ $loop->index }}].serial='{{ $device['serial'] }}'">
+											</td>
+											<td class="table-text col-sm-1">
+												<input type="text" class="form-control"
+													ng-model="devices[{{ $loop->index }}].base_price"
+													ng-init="devices[{{ $loop->index }}].base_price='{{ $device['base_price'] }}'">
+											</td>
+											<td class="table-text col-sm-1">
+												<input type="text" class="form-control"
+													ng-model="devices[{{ $loop->index }}].tax"
+													ng-init="devices[{{ $loop->index }}].tax='{{ $device['tax'] }}'">
+											</td>
+											<td class="table-text col-sm-1">
+												<input type="text" class="form-control"
+													ng-model="devices[{{ $loop->index }}].mono_price"
+													ng-init="devices[{{ $loop->index }}].mono_price='{{ $device['mono_price'] }}'">
+											</td>
+											<td class="table-text col-sm-1">
+												<input type="text" class="form-control"
+													ng-model="devices[{{ $loop->index }}].color_price"
+													ng-init="devices[{{ $loop->index }}].color_price='{{ $device['color_price'] }}'">
+											</td>
+											<td class="table-text col-sm-1">
+												<input type="text" class="form-control"
+													ng-model="devices[{{ $loop->index }}].monocolor_price"
+													ng-init="devices[{{ $loop->index }}].monocolor_price='{{ $device['monocolor_price'] }}'">
+											</td>
+											<td class="table-text col-sm-1">
+												<input type="text" class="form-control"
+													ng-model="devices[{{ $loop->index }}].color2_price"
+													ng-init="devices[{{ $loop->index }}].color2_price='{{ $device['color2_price'] }}'">
+											</td>
+											<td class="table-text col-sm-1">
+												<input type="text" class="form-control"
+													ng-model="devices[{{ $loop->index }}].color3_price"
+													ng-init="devices[{{ $loop->index }}].color3_price='{{ $device['color3_price'] }}'">
+											</td>
+											<td class="table-text col-sm-1">														
+												<button type="button" class="btn btn-primary" ng-click="updateDeviceInDatabase({{ $loop->index }}, '{{ $device['serial'] }}')">
+													Save device
+												</button>
+											</td> 
+											<td class="table-text col-sm-1">									
+												<button type="button" class="btn btn-danger" ng-click="deleteDeviceFromDatabase({{ $loop->index }}, '{{ $device['serial'] }}')">
+													Delete device
+												</button>
+											</td> 
+										</tr>
+									@endforeach
+								</tbody>
+							</table>	
+							
+						</div>	
+						
+						<div class="col-sm-12">
+							<ul uib-pagination
+										total-items="devices.length"
+										items-per-page="devicesNumPerPage"
+										ng-model="devicesCurrentPage"
+										max-size="devicesMaxSize"
+										class="pagination-sm"
+										boundary-links="true"></ul>
+						</div>							
+					</div>
+				</div>
+			@else
+				<br>
+				There are no devices in the database.
+			@endif
+ 
+        </div>
+    </div>
+@endsection

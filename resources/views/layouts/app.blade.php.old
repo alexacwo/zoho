@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <title>Pahoda Image Products</title>
+
+    <!-- Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/4.4.0/css/font-awesome.min.css" rel='stylesheet' type='text/css'>
+    <link href="https://fonts.googleapis.com/css?family=Lato:100,300,400,700" rel='stylesheet' type='text/css'>
+
+    <!-- Styles -->
+    <link href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" rel="stylesheet"> 
+    <link href="{{ url('/public/css/app.css') }}" rel="stylesheet"> 
+
+    <style>
+        body {
+            font-family: 'Lato';
+        }
+        .fa-btn {
+            margin-right: 6px;
+        }
+    </style>
+</head>
+<body id="app-layout" ng-app="deviceApp">
+    <nav class="navbar navbar-default">
+        <div class="container">
+            <div class="navbar-header">
+			
+                <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#app-navbar-collapse">
+                    <span class="sr-only">Toggle Navigation</span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                    <span class="icon-bar"></span>
+                </button>
+
+                <a class="navbar-brand" href="{{ url('/') }}">
+                    Pahoda Image Products
+                </a>
+            </div>
+
+            <div class="collapse navbar-collapse" id="app-navbar-collapse">
+                <!-- Left Side Of Navbar -->
+                <ul class="nav navbar-nav">
+                </ul>
+
+                <!-- Right Side Of Navbar -->
+                <ul class="nav navbar-nav navbar-right">
+				
+					@if (!isset($access_token))
+                        <li>
+							<a href="https://my.freshbooks.com/service/auth/oauth/authorize?client_id=cb0a9bdb2130587c619c254a6b79a2b0daac7f9caaecc6bf72932d759cbef9e4&response_type=code&redirect_uri=https://dev.motoparts.su/tasks/freshbooks/fb_login/">
+								Login
+							</a>
+						</li>
+                    @else
+						<li>
+							<a href="{{ url('/sales') }}">
+								Sales
+							</a>
+                        </li>
+						<li>
+							<a href="{{ url('/invoices') }}">
+								Invoices
+							</a>
+                        </li>
+                        <li class="dropdown">
+                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-expanded="false">
+								Admin <span class="caret"></span>
+                            </a>
+
+                            <ul class="dropdown-menu" role="menu">
+                                <li>
+									<a href="{{ url('/logout') }}">
+										<i class="fa fa-btn fa-sign-out"></i>
+										Logout
+									</a>
+								</li>
+                            </ul>
+                        </li>
+                    @endif
+                </ul>
+            </div>
+        </div>
+    </nav>
+	
+	<div ng-controller="deviceUploadController">
+		@if (isset($access_token))
+			@yield('content')
+		@endif 
+	</div>
+
+    <!-- JavaScripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+    <script src="https://code.angularjs.org/1.6.3/angular.min.js"></script>
+    <script src="https://code.angularjs.org/1.6.3/angular-animate.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js"></script>
+	
+	<script src="{{asset('public/js/ui-bootstrap-tpls-2.3.0.js')}}"></script> 
+	
+    <script src="{{ url('/public/js/app.js') }}"></script>
+    <script src="{{ url('/public/js/angular_script.js') }}"></script>
+	<script>
+		(function() {
+			'use strict';
+			
+				var app = angular.module('deviceApp',
+					[
+						'ngAnimate',
+						'deviceUploadCtrl',
+						'deviceService',
+						'ui.bootstrap'
+					],
+				function($interpolateProvider) {
+					$interpolateProvider.startSymbol('<%');
+					$interpolateProvider.endSymbol('%>');
+				});
+				
+				app
+				.filter('customFilterByProfitAmount', function() {
+					return function(input, param) {
+						 
+						var out = [];
+						 	
+						for (var i = 0; i < input.length; i++) {
+							switch (param) {
+								case '25': 
+									if (input[i].price_amount/input[i].cost_amount >= 1.25) out.push(input[i]);
+									break;
+								case '10': 
+									if (input[i].price_amount/input[i].cost_amount > 1.1 && input[i].price_amount/input[i].cost_amount < 1.25) out.push(input[i]);
+									break;
+								case '5': 
+									if (input[i].price_amount/input[i].cost_amount <= 1.1) out.push(input[i]);
+									break;
+								case 'undefined':
+								default:
+									return input;
+									break;
+							} 
+						}  
+						return out;
+					};
+				})
+				angular
+					.module('deviceService', [])
+					.factory('Device', function($http) {
+					return {  
+						save : function(deviceParams) {
+							return $http({
+								method: 'POST',
+								url: 'api/devices',
+								data:  {
+									device: deviceParams
+								}
+								
+							}) 
+						}, 
+						update : function(serialNumber, device) {
+							return $http({ 
+								method: 'PUT',
+								url: 'api/devices/' + serialNumber,
+								data:  {
+									device: device
+								}
+								
+							}) 
+						},  
+						delete : function(serialNumber) {
+							return $http({ 
+								method: 'DELETE',
+								url: 'api/devices/' + serialNumber								
+							})
+						}, 
+					}
+				});
+				
+				angular
+				.module('deviceUploadCtrl', [])
+				.controller('deviceUploadController', function($scope, $http, $timeout, Device) {
+					 $scope.devices = {}; 
+					$scope.hideDeletedDevice = {};
+					$scope.deviceUploadingError = false;
+					$scope.deviceUploadingSuccess = false;
+					
+					/* Filtered Sales BEGIN */
+					if (typeof $scope.sales != 'undefined') {
+						$scope.filteredSales = []
+						,$scope.salesCurrentPage = 1
+						,$scope.salesNumPerPage = 5
+						,$scope.salesMaxSize = 5;
+						
+						$scope.$watch('salesCurrentPage + salesNumPerPage', function() {
+							var begin = (($scope.salesCurrentPage - 1) * $scope.salesNumPerPage)
+							, end = begin + $scope.salesNumPerPage;
+
+							$scope.filteredSales = $scope.sales.slice(begin, end);
+						});	
+					}
+					/* Filtered Sales END */
+					
+					/* Filtered Devices BEGIN */
+					console.log($scope.devices);
+					if (typeof $scope.devices != 'undefined') {
+						$scope.filteredDevices = []
+						,$scope.devicesCurrentPage = 1
+						,$scope.devicesNumPerPage = 5
+						,$scope.devicesMaxSize = 5;
+
+						$scope.$watch('devicesCurrentPage + devicesNumPerPage', function() {
+							var begin = (($scope.devicesCurrentPage - 1) * $scope.devicesNumPerPage)
+							, end = begin + $scope.devicesNumPerPage;
+
+							$scope.filteredDevices = $scope.devices.slice(begin, end);
+						});
+					}
+					/* Filtered Devices END */
+					
+					$scope.saveDeviceToDatabase = function(index) {
+						
+						console.log($scope.devices);
+						  Device
+							.save($scope.devices[index])
+							.then(
+								function(response) {
+									delete $scope.devices[index];								
+									$scope.showDevicesUploadRow[index] = false;
+									
+									$scope.deviceUploadingSuccess = true;
+									$timeout( function(){
+										$scope.deviceUploadingSuccess = false;
+									}, 3000);
+									console.log(Object.keys($scope.devices).length);
+									if (Object.keys($scope.devices).length == 0) {
+										$scope.showMessageAfterAllDevicesAreSaved = true;
+									}
+									
+								}, function(error) {
+									$scope.deviceUploadingError = true;
+									$timeout( function(){
+										$scope.deviceUploadingError = false;
+									}, 3000);
+								}
+							);  
+					}					
+					
+					$scope.updateDeviceInDatabase = function(index, serialNumber) {
+						 
+						 Device
+							.update(serialNumber, $scope.devices[index])
+							.then(
+								function(response) {
+									$scope.deviceUploadingSuccess = true;
+									$timeout( function(){
+										$scope.deviceUploadingSuccess = false;
+									}, 3000);
+								}, function(error) {							
+									console.log(error);
+								}
+							); 
+					}				
+					
+					$scope.deleteDeviceFromDatabase = function(index, serialNumber) {
+						
+						console.log(serialNumber);
+						Device
+							.delete(serialNumber)
+							.then(
+								function(response) {
+									console.log(response);									
+									$scope.hideDeletedDevice[index] = true;
+								}, function(error) {							
+									console.log(error);
+								}
+							);
+					}
+				}); 			
+		})();
+	</script>
+</body>
+</html>
